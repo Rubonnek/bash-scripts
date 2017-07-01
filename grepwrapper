@@ -1,0 +1,64 @@
+#!/bin/bash -e
+
+# Copyright (C) 2015 by Wilson E. Alvarez <wilson.e.alvarez1@gmail.com>
+# Software has been released under the MIT License.
+# To view the full license, please visit the following link:
+# 	https://raw.githubusercontent.com/Arkranur/bash-scripts/master/LICENSE
+
+# Description: Somewhat generic grep wrapper for files whose filenames satisfy
+# the globbing pattern filename.*, where * replaces numbers
+# The -e option above makes the script kill itself should any command return a nonzero value.
+
+# The -s nullglob option below makes the script return filenames instead of executing the result of the globbing pattern.
+shopt -s nullglob
+
+# If there's only one positional parameter, I'm going to assume this parameter will be the pattern string we want to search for:
+[[ $# == 1 ]] && { printf "\nWarning: no range was given. Defaulting range to 'specialcase'\n\n"; grep -h --color=always $1 specialcase; exit; }
+
+# Checking the number of arguments
+[[ $# < 3 ]] && { printf "\nError: ${0##*/} requires at least 3 arguments\n\nUsage:\n\t${0##*/} [grep_options] [pattern] [first_endpoint] [second_endpoint]\n\n"; exit 1; }
+
+# Storing files in a variable to count the array items later
+number_of_files=( ./somedirectory/somepatternhere* )
+
+# Checking if the first endpoint is a number
+[[ ${@:$(($#-1)):1} =~ ^[0-9]+$ ]] || { printf "\nError: The first endpoint cannot be '${@:$(($#-1)):1}'. It must than must be a number from 0 and up to $((${#number_of_files[*]}-1)).\n\nUsage:\n\t${0##*/} [grep_options] [pattern] [first_endpoint] [second_endpoint]\n\n"; exit 1; }
+
+# Checking if the second endpoint is a number
+[[ ${@:$#} =~ ^[0-9]+$ ]] || { printf "\nError: The second endpoint cannot be '${@:$#}'. It must be a number from 0 and up to $((${#number_of_files[*]}-1)).\n\nUsage:\n\t${0##*/} [grep_options] [pattern] [first_endpoint] [second_endpoint]\n\n"; exit 1; }
+
+# Checking if the first endpoint falls within range
+(( ${@:$(($#-1)):1} >= 0 && ${@:$(($#-1)):1} < ${#number_of_files[*]} )) || { printf "\nThe first endpoint must be a number from 0 and up to $((${#number_of_files[*]}-1)).\n\nUsage:\n\t${0##*/} [grep_options] [pattern] [first_endpoint] [second_endpoint]\n\n"; exit 1; }
+
+# Checking if the second endpoint falls within range
+(( ${@:$#} >= 0 && ${@:$#} < ${#number_of_files[*]} )) || { printf "\nThe second endpoint must be a number from 0 and up to $((${#number_of_files[*]}-1)).\n\nUsage:\n\t${0##*/} [grep_options] [pattern] [first_endpoint] [second_endpoint]\n\n"; exit 1; }
+
+# Checking if the file contains ASCII or UTF-8 characters, and if it's ASCII,
+# set LC_ALL=C for every possible grep.  Only one of the following grep lines
+# will be executed:
+if [[ `file filename` =~ .+ASCII.+$ ]]; then
+	if (( ${@:$(($#-1)):1} == 0 && ${@:$#} == 0 )); then
+	    LC_ALL=C grep -h --color=always "${@:1:$(($#-2))}" ./somedirectory/somepatternhere${@:$#}
+	elif (( ${@:$(($#-1)):1} == ${@:$#} )); then
+	    LC_ALL=C grep -h --color=always "${@:1:$(($#-2))}" ./somedirectory/somepatternhere${@:$#}
+	elif (( ${@:$(($#-1)):1} == 0 )); then
+	    eval LC_ALL=C grep -h --color=always "${@:1:$(($#-2))}" ./somedirectory/somepatternhere{0..${@:$#}}
+	elif (( ${@:$#} == 0 )); then
+	    eval LC_ALL=C grep -h --color=always "${@:1:$(($#-2))}" ./somedirectory/somepatternhere{${@:$(($#-1)):1}..${@:$#}}
+	else
+	    eval LC_ALL=C grep -h --color=always "${@:1:$(($#-2))}" ./somedirectory/somepatternhere{${@:$(($#-1)):1}..${@:$#}}
+	fi
+else
+	if (( ${@:$(($#-1)):1} == 0 && ${@:$#} == 0 )); then
+	    grep -h --color=always "${@:1:$(($#-2))}" ./somedirectory/somepatternhere${@:$#}
+	elif (( ${@:$(($#-1)):1} == ${@:$#} )); then
+	    grep -h --color=always "${@:1:$(($#-2))}" ./somedirectory/somepatternhere${@:$#}
+	elif (( ${@:$(($#-1)):1} == 0 )); then
+	    eval grep -h --color=always "${@:1:$(($#-2))}" ./somedirectory/somepatternhere{0..${@:$#}}
+	elif (( ${@:$#} == 0 )); then
+	    eval grep -h --color=always "${@:1:$(($#-2))}" ./somedirectory/somepatternhere{${@:$(($#-1)):1}..${@:$#}}
+	else
+	    eval grep -h --color=always "${@:1:$(($#-2))}" ./somedirectory/somepatternhere{${@:$(($#-1)):1}..${@:$#}}
+	fi
+
+fi

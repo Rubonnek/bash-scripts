@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Copyright (C) 2015 by Wilson E. Alvarez <wilson.e.alvarez1@gmail.com>
+# Software has been released under the MIT License.
+# To view the full license, please visit the following link:
+# 	https://raw.githubusercontent.com/Arkranur/bash-scripts/master/LICENSE
+
+if (( $# != 1 )); then
+	printf "Error: this program can only receive one argument\n"
+	exit 1
+fi
+
+if [[ -f $1 ]]; then
+	printf "Error: $1 is not a directory\n"
+	exit 2
+fi
+
+printf "Are you sure you would like to reset file permissions in $1? (Y/N)\n"
+read ans
+
+if [[ $ans =~ Y*|y* ]]; then
+    #Obtaining user's umask to calculate file and folder permissions
+    user_umask=`umask`
+    
+    #Calculating File Permissions using octal digits
+    first_digit=$((6&~${user_umask:1:1}))
+    second_digit=$((6&~${user_umask:2:1}))
+    third_digit=$((6&~${user_umask:3:1}))
+    
+    find $1 -type f -print0 | xargs -0 chmod $first_digit$second_digit$third_digit #File Permissions
+
+    #Calculating Folder Permissions using octal digits
+    first_digit=$((7&~${user_umask:1:1}))
+    second_digit=$((7&~${user_umask:2:1}))
+    third_digit=$((7&~${user_umask:3:1}))
+
+    find $1 -type d -print0 | xargs -0 chmod $first_digit$second_digit$third_digit #Directory Permissions
+else
+	printf "Permissions remain unchanged\n"
+fi

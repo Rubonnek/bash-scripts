@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Copyright (C) 2015 by Wilson E. Alvarez <wilson.e.alvarez1@gmail.com>
+# Software has been released under the MIT License.
+# To view the full license, please visit the following link:
+# 	https://raw.githubusercontent.com/Arkranur/bash-scripts/master/LICENSE
+
+# Description: 
+#    This script was made to grab the contents of the file
+#    http://www.pcrs.com.au/AllCountries/A1-cidr.txt, remove unnecessary text
+#    and write a file with only the first two octets of every IP. Finally we
+#    read that last file in order to parse its contents and output a part of a
+#    MySQL select query. We can use this to query databases
+#
+#    Lastly we will parse the contents of the query result with grepcidrs
+
+# First we get the contents of the file
+wget http://www.pcrs.com.au/AllCountries/A1-cidr.txt
+
+# Then we remove unnecesarry text and format let the text contain one IP with its CIDR per line:
+tail -n +2 A1-cidr.txt | sed -e 's/Deny from //g' -e 's/ /\n/g' | sed '/^\s*$/d' > one_ip_per_line
+
+# Now we grab the first to octets of every IP
+grep -E -o "(^[0-9]+\.[0-9]+\.)" one_ip_per_line | sort -n | sort -u > two_octets
+
+# And finally we make this a MySQL query
+database_name=some_database
+table_name=some_table
+column_name=some_column
+
+while read line; do
+	part_of_query+=( " or $column_name like '%$line%'" )
+done < two_octets
+
+#We now remove the begginning ' or ' from the first message
+part_of_query[0]=${part_of_query[0]/ or /}
+
+# Now we can run the MySQL database query
+mysql -u $USER -p -e "select * from $table_name where ${part_of_query[*]}" $database_name -s

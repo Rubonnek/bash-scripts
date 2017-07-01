@@ -1,0 +1,47 @@
+#!/bin/bash -e
+
+# Copyright (C) 2015 by Wilson E. Alvarez <wilson.e.alvarez1@gmail.com>
+# Software has been released under the MIT License.
+# To view the full license, please visit the following link:
+# 	https://raw.githubusercontent.com/Arkranur/bash-scripts/master/LICENSE
+
+# Description: I use this script for generating a menu with all my local git repositories.
+# From the menu I choose a folder and the script opens my last vim session for the chosen project.
+# Note: The -e option above kills the script if any of the commands below return a non-zero value.
+
+# TODO: Use vimscript to bind Ctrl-s to do the following: write the buffer of all the tabs and then save the current session to the file last_vim_session inside the git repository
+
+# The shell option bellow expands * into text and does not execute the result.
+shopt -s nullglob
+
+# Create a third file descriptor ad make it point to stdout.  This is needed to
+# be able to grab the ouput of stderr from the dialog line in order to save it
+# into a variable.
+exec 3>&1
+
+# The following environment variables need to be edited in order to personalize the script:
+directory_where_repositories_are_stored=somedirectory
+vim_session=session_name
+
+# The script will loop until the user either kills it or presses cancel in the dialog menu. Looping is especially useful when using the i3 Window Manager.
+while true; do
+
+	# Update the current avaiable repositories each time the user exits vim
+	git_repositories=( $directory_where_repositories_are_stored/* )
+
+	# The for loop inside the following line generates the menu list with the names of the local git repositories
+	# This script assumes there is a vim session named session_name inside each git repository
+	chosen_repository=$( dialog --title "Choose your vim session" \
+			        --menu "Here's the list of projects:" 0 0 0 \
+				        `for (( i = 0; i <= $((${#git_repositories[*]}-1)); i++ )) do
+				        	printf "$(($i+1)) ${git_repositories[$i]##*/} \\\n"
+					done` \
+				2>&1 1>&3 )
+
+	# Open the session inside the git repository
+	vim -S ${git_repositories[$((chosen_repository-1))]}/$vim_session
+
+done
+
+# If this script were to be sourced, we can now the third file descriptor. It is no longer needed.
+# exec 3>&-;

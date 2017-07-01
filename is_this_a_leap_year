@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Copyright (C) 2015 by Wilson E. Alvarez <wilson.e.alvarez1@gmail.com>
+# Software has been released under the MIT License.
+# To view the full license, please visit the following link:
+# 	https://raw.githubusercontent.com/Arkranur/bash-scripts/master/LICENSE
+
+# Description:
+#	This script takes a year and says if its a leap year or not.
+
+
+if (( $# != 1 )); then
+	printf 'Please enter one string numbers.\n'
+	exit
+fi
+
+if [[ ! $1 =~ ^[0-9]+$ ]]; then
+	printf 'Please only enter one string numbers.\n'
+	exit
+fi
+
+# If the yearis divisible by 4 it might be a leap year
+if (( 10#$1%4 == 0 )); then
+	# If the year is divisilble by 4 but not 100, it is a leap year
+	if (( 10#$1%100 != 0 )); then
+		printf "It's a leap year!\n"
+		exit
+	elif (( 10#$1%100 == 0 && 10#$1%400 == 0 )); then # If the year is both divisilble by 4 and 100 and 400 it is a leap yearbut
+		printf "It's a leap year!\n"
+		exit
+	else
+		printf "It's not a leap year!\n"
+		exit
+	fi
+
+else # If the year is not divisible by 4, it is not a leap year.
+	printf "It's not a leap year!\n"
+	exit
+fi
+
